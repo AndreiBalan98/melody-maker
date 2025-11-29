@@ -120,7 +120,7 @@ serve(async (req) => {
         const statusData = await statusResponse.json();
         console.log("Status check:", JSON.stringify(statusData));
 
-        // Expected format: { code, msg, data: { status, data: [tracks] } }
+        // Expected format: { code, msg, data: { status, response: { sunoData: [tracks] } } }
         if (
           statusData &&
           typeof statusData === "object" &&
@@ -128,29 +128,30 @@ serve(async (req) => {
           (statusData as any).data
         ) {
           const taskInfo = (statusData as any).data;
-          const tracks =
-            Array.isArray(taskInfo.data) ? taskInfo.data :
-            Array.isArray((statusData as any).data) ? (statusData as any).data :
-            [];
-
-          if (tracks.length > 0) {
-            const song = tracks[0];
-
-            if (song.audio_url) {
-              audioUrl = song.audio_url as string;
-              console.log("Song generation complete! Audio URL:", audioUrl);
-              break;
-            }
+          const taskStatus = taskInfo.status;
+          
+          // Check for failed statuses
+          if (
+            taskStatus === "CREATE_TASK_FAILED" ||
+            taskStatus === "GENERATE_AUDIO_FAILED" ||
+            taskStatus === "SENSITIVE_WORD_ERROR" ||
+            taskStatus === "CALLBACK_EXCEPTION"
+          ) {
+            throw new Error(`Song generation failed: ${(statusData as any).msg || taskStatus}`);
           }
 
-          if (taskInfo.status && typeof taskInfo.status === "string") {
-            if (
-              taskInfo.status === "CREATE_TASK_FAILED" ||
-              taskInfo.status === "GENERATE_AUDIO_FAILED" ||
-              taskInfo.status === "SENSITIVE_WORD_ERROR" ||
-              taskInfo.status === "CALLBACK_EXCEPTION"
-            ) {
-              throw new Error(`Song generation failed: ${(statusData as any).msg || taskInfo.status}`);
+          // Accept audio_url when FIRST_SUCCESS or SUCCESS (don't wait for all tracks)
+          if (taskStatus === "FIRST_SUCCESS" || taskStatus === "SUCCESS") {
+            const sunoData = taskInfo.response?.sunoData || [];
+            
+            if (Array.isArray(sunoData) && sunoData.length > 0) {
+              const song = sunoData[0];
+              
+              if (song.audioUrl || song.audio_url) {
+                audioUrl = (song.audioUrl || song.audio_url) as string;
+                console.log(`Song ready at ${taskStatus}! Audio URL:`, audioUrl);
+                break;
+              }
             }
           }
         }
