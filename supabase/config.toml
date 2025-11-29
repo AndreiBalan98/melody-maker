@@ -1,1 +1,4 @@
 project_id = "eqequskzaflhznntbjfu"
+
+[functions.generate-song]
+verify_jwt = false
