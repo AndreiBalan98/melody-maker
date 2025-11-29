@@ -96,13 +96,13 @@ serve(async (req) => {
 
     console.log("Suno task ID:", taskId);
 
-    // Poll for song completion (max 60 seconds, check every 3 seconds)
+    // Poll for song completion (max 2 minutes, check every 5 seconds)
     let attempts = 0;
-    const maxAttempts = 20;
+    const maxAttempts = 24; // 24 attempts × 5 seconds = 120 seconds (2 minutes)
     let audioUrl: string | null = null;
 
     while (attempts < maxAttempts && !audioUrl) {
-      await new Promise((resolve) => setTimeout(resolve, 3000));
+      await new Promise((resolve) => setTimeout(resolve, 5000)); // Wait 5 seconds between checks
       attempts++;
 
       console.log(`Polling attempt ${attempts}/${maxAttempts}`);
