@@ -3,23 +3,23 @@ import { Gift, Heart, PartyPopper, Baby } from "lucide-react";
 const features = [
   {
     icon: PartyPopper,
-    title: "Birthday Songs",
-    description: "Make their special day even more memorable with a custom birthday song",
+    title: "Melodii de Ziua de Naștere",
+    description: "Fă ziua lor specială și mai memorabilă cu o melodie personalizată",
   },
   {
     icon: Gift,
-    title: "Perfect Gifts",
-    description: "Give the gift of music - personalized songs for any occasion",
+    title: "Cadouri Perfecte",
+    description: "Oferă cadoul muzicii - melodii personalizate pentru orice ocazie",
   },
   {
     icon: Baby,
-    title: "Kindergarten Fun",
-    description: "Educational and entertaining songs perfect for little learners",
+    title: "Distractie la Grădinița",
+    description: "Melodii educative și distractive perfecte pentru cei mici",
   },
   {
     icon: Heart,
-    title: "Special Moments",
-    description: "Celebrate milestones, achievements, and everyday magic",
+    title: "Momente Speciale",
+    description: "Celebrează realizări, evenimente și magia din fiecare zi",
   },
 ];
 
@@ -29,11 +29,11 @@ const Features = () => {
       <div className="container mx-auto px-4">
         <div className="text-center mb-16 space-y-4">
           <h2 className="text-4xl md:text-5xl font-display font-bold">
-            Songs for Every
-            <span className="bg-gradient-warm bg-clip-text text-transparent"> Occasion</span>
+            Melodii Pentru Fiecare
+            <span className="bg-gradient-warm bg-clip-text text-transparent"> Ocazie</span>
           </h2>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Whether it's a celebration or just because, create the perfect personalized song
+            Fie că este o sărbătoare sau pur și simplu așa, creează melodia personalizată perfectă
           </p>
         </div>
 

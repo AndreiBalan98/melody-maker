@@ -31,43 +31,45 @@ const Hero = () => {
           <div className="text-center md:text-left space-y-8 animate-in fade-in slide-in-from-left duration-700">
             <div className="inline-block px-4 py-2 bg-accent/20 rounded-full">
               <span className="text-accent-foreground font-semibold text-sm">
-                ✨ Create Magic with Music
+                ✨ Creează Magie cu Muzică
               </span>
             </div>
             
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-display font-bold leading-tight">
-              Personalized Songs
+              Melodii Personalizate
               <br />
               <span className="bg-gradient-warm bg-clip-text text-transparent">
-                Made Just For You
+                Create Special Pentru Tine
               </span>
             </h1>
             
             <p className="text-xl md:text-2xl text-muted-foreground max-w-xl">
-              Create custom songs for birthdays, gifts, kindergarten, and special moments. 
-              Every song is unique, every moment unforgettable.
+              Creează melodii personalizate pentru copii, zile de naștere, cadouri și momente speciale. 
+              Fiecare melodie este unică, fiecare moment de neuitat.
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
               <Link to="/create">
                 <Button variant="hero" size="xl" className="group">
                   <Music className="group-hover:rotate-12 transition-transform" />
-                  Create Your Song
+                  Creează Melodia Ta
                 </Button>
               </Link>
-              <Button variant="outline" size="xl">
-                How It Works
-              </Button>
+              <Link to="/how-it-works">
+                <Button variant="outline" size="xl">
+                  Cum Funcționează
+                </Button>
+              </Link>
             </div>
 
             <div className="flex items-center gap-8 justify-center md:justify-start text-sm text-muted-foreground">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-                <span>Ready in minutes</span>
+                <span>Gata în câteva minute</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-accent animate-pulse" />
-                <span>Fully personalized</span>
+                <span>Complet personalizată</span>
               </div>
             </div>
           </div>
@@ -77,7 +79,7 @@ const Hero = () => {
             <div className="relative rounded-3xl overflow-hidden shadow-warm">
               <img 
                 src={heroImage} 
-                alt="Colorful musical instruments and notes representing personalized music creation"
+                alt="Instrumente muzicale colorate reprezentând crearea de muzică personalizată"
                 className="w-full h-auto"
               />
               {/* Overlay gradient */}
@@ -91,8 +93,8 @@ const Hero = () => {
                   <Music className="text-white" size={24} />
                 </div>
                 <div>
-                  <p className="font-display font-semibold">1000+ songs</p>
-                  <p className="text-sm text-muted-foreground">Created with love</p>
+                  <p className="font-display font-semibold">1000+ melodii</p>
+                  <p className="text-sm text-muted-foreground">Create cu drag</p>
                 </div>
               </div>
             </div>
