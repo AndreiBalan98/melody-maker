@@ -62,7 +62,9 @@ serve(async (req) => {
       body: JSON.stringify({
         customMode: false,
         prompt: prompt,
+        title: title,
         model: "V3_5",
+        callBackUrl: "", // Not using callbacks, we'll poll for status instead
       }),
     });
 
