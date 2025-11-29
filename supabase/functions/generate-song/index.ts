@@ -61,35 +61,45 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         customMode: false,
+        instrumental: false,
         prompt: prompt,
         title: title,
         model: "V3_5",
-        callBackUrl: "", // Not using callbacks, we'll poll for status instead
+        // Suno requires a non-empty callback URL, but we rely on polling for the result.
+        // Using a harmless placeholder URL that can safely receive callbacks.
+        callBackUrl: "https://example.com/callback",
       }),
     });
-
-    if (!sunoResponse.ok) {
-      const errorText = await sunoResponse.text();
-      console.error("Suno API error:", sunoResponse.status, errorText);
-      throw new Error(`Suno API error: ${sunoResponse.status} - ${errorText}`);
-    }
 
     const sunoData = await sunoResponse.json();
     console.log("Suno API response:", JSON.stringify(sunoData));
 
-    // Suno API returns an array of generated songs
-    // We need to poll for the completion status
-    if (!sunoData || !Array.isArray(sunoData) || sunoData.length === 0) {
-      throw new Error("No song data returned from Suno API");
+    // New Suno API format: { code, msg, data: { task_id: string } }
+    if (!sunoData || typeof sunoData !== "object") {
+      throw new Error("Unexpected response format from Suno API");
     }
 
-    const songId = sunoData[0].id;
-    console.log("Song ID:", songId);
+    if ("code" in sunoData && (sunoData as any).code !== 200) {
+      const errorMessage = (sunoData as any).msg || `Suno API error code ${(sunoData as any).code}`;
+      throw new Error(errorMessage);
+    }
+
+    const taskId =
+      (sunoData as any).data?.task_id ||
+      (sunoData as any).data?.taskId ||
+      (sunoData as any).task_id ||
+      (sunoData as any).taskId;
+
+    if (!taskId) {
+      throw new Error("No task ID returned from Suno API");
+    }
+
+    console.log("Suno task ID:", taskId);
 
     // Poll for song completion (max 60 seconds, check every 3 seconds)
     let attempts = 0;
     const maxAttempts = 20;
-    let audioUrl = null;
+    let audioUrl: string | null = null;
 
     while (attempts < maxAttempts && !audioUrl) {
       await new Promise((resolve) => setTimeout(resolve, 3000));
@@ -98,7 +108,7 @@ serve(async (req) => {
       console.log(`Polling attempt ${attempts}/${maxAttempts}`);
 
       const statusResponse = await fetch(
-        `https://api.sunoapi.org/api/v1/get?ids=${songId}`,
+        `https://api.sunoapi.org/api/v1/generate/record-info?taskId=${taskId}`,
         {
           headers: {
             "Authorization": `Bearer ${SUNO_API_KEY}`,
@@ -110,16 +120,38 @@ serve(async (req) => {
         const statusData = await statusResponse.json();
         console.log("Status check:", JSON.stringify(statusData));
 
-        if (statusData && Array.isArray(statusData) && statusData.length > 0) {
-          const song = statusData[0];
-          
-          // Check if the song is complete and has an audio URL
-          if (song.status === "complete" && song.audio_url) {
-            audioUrl = song.audio_url;
-            console.log("Song generation complete! Audio URL:", audioUrl);
-            break;
-          } else if (song.status === "error") {
-            throw new Error("Song generation failed");
+        // Expected format: { code, msg, data: { status, data: [tracks] } }
+        if (
+          statusData &&
+          typeof statusData === "object" &&
+          (!("code" in statusData) || (statusData as any).code === 200) &&
+          (statusData as any).data
+        ) {
+          const taskInfo = (statusData as any).data;
+          const tracks =
+            Array.isArray(taskInfo.data) ? taskInfo.data :
+            Array.isArray((statusData as any).data) ? (statusData as any).data :
+            [];
+
+          if (tracks.length > 0) {
+            const song = tracks[0];
+
+            if (song.audio_url) {
+              audioUrl = song.audio_url as string;
+              console.log("Song generation complete! Audio URL:", audioUrl);
+              break;
+            }
+          }
+
+          if (taskInfo.status && typeof taskInfo.status === "string") {
+            if (
+              taskInfo.status === "CREATE_TASK_FAILED" ||
+              taskInfo.status === "GENERATE_AUDIO_FAILED" ||
+              taskInfo.status === "SENSITIVE_WORD_ERROR" ||
+              taskInfo.status === "CALLBACK_EXCEPTION"
+            ) {
+              throw new Error(`Song generation failed: ${(statusData as any).msg || taskInfo.status}`);
+            }
           }
         }
       }
