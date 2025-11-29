@@ -12,13 +12,13 @@ serve(async (req) => {
   }
 
   try {
-    const { childInfo, occasion } = await req.json();
+    const { childInfo } = await req.json();
 
-    if (!childInfo || !occasion) {
-      throw new Error("Missing required fields: childInfo and occasion");
+    if (!childInfo) {
+      throw new Error("Missing required field: childInfo");
     }
 
-    console.log("Generating song for:", { occasion, childInfoLength: childInfo.length });
+    console.log("Generating song for:", { childInfoLength: childInfo.length });
 
     // Get Suno API key
     const SUNO_API_KEY = Deno.env.get("SUNO_API_KEY");
@@ -26,29 +26,9 @@ serve(async (req) => {
       throw new Error("SUNO_API_KEY is not configured");
     }
 
-    // Build the prompt based on the occasion and child info
-    const promptMap: Record<string, string> = {
-      birthday: `A cheerful, upbeat birthday song celebrating ${childInfo}. Happy and fun melody perfect for a birthday party.`,
-      gift: `A heartfelt, warm song created as a special gift. ${childInfo}. Touching and memorable.`,
-      kindergarten: `A fun, educational children's song for kindergarten. ${childInfo}. Simple, catchy, and age-appropriate.`,
-      celebration: `An exciting, celebratory song for a special moment. ${childInfo}. Joyful and energetic.`,
-      bedtime: `A gentle, soothing lullaby for bedtime. ${childInfo}. Calm, peaceful, and comforting.`,
-      learning: `An engaging, educational song to help with learning. ${childInfo}. Fun and informative.`,
-    };
-
-    const prompt = promptMap[occasion] || `A personalized song about ${childInfo}. Warm and heartfelt.`;
-
-    // Generate a title
-    const titleMap: Record<string, string> = {
-      birthday: "Happy Birthday Song",
-      gift: "Special Gift Song",
-      kindergarten: "Kindergarten Fun",
-      celebration: "Celebration Time",
-      bedtime: "Sweet Dreams Lullaby",
-      learning: "Learning Adventure",
-    };
-
-    const title = titleMap[occasion] || "Your Personalized Song";
+    // Build the prompt based on child info
+    const prompt = `Create a cheerful and playful personalized children's song. ${childInfo}. The song should be warm, fun, and suitable for children.`;
+    const title = "Melodia Ta Personalizată";
 
     console.log("Calling Suno API with prompt:", prompt);
 
