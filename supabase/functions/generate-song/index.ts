@@ -62,6 +62,18 @@ serve(async (req) => {
     console.log("Generated prompt:", prompt);
     console.log("Title:", title);
 
+    // Determine style based on music type and occasion
+    let style = "children's music, playful, joyful, upbeat";
+    if (musicType === "children") {
+      if (occasion === "birthday") {
+        style = "children's birthday song, cheerful, celebratory, fun";
+      } else if (occasion === "kindergarten") {
+        style = "educational children's song, learning, engaging, playful";
+      } else {
+        style = "children's music, sweet, heartwarming, melodic";
+      }
+    }
+
     // Call Suno API to generate song
     const sunoResponse = await fetch('https://api.sunoapi.org/api/v1/generate', {
       method: 'POST',
@@ -70,10 +82,12 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
+        customMode: true,
+        instrumental: false,
+        model: 'V3_5',
         prompt: prompt,
+        style: style,
         title: title,
-        make_instrumental: false,
-        model: 'chirp-v3-5',
       }),
     });
 
