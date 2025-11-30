@@ -100,8 +100,21 @@ serve(async (req) => {
     const sunoData = await sunoResponse.json();
     console.log("Suno response:", sunoData);
 
-    const taskIds = sunoData.task_ids;
-    if (!taskIds || taskIds.length === 0) {
+    const taskIds: string[] = [];
+
+    // New API response shape: { code, msg, data: { taskId } }
+    if (sunoData?.data?.taskId) {
+      taskIds.push(sunoData.data.taskId);
+    } else if (Array.isArray(sunoData?.data)) {
+      for (const item of sunoData.data) {
+        if (item?.taskId) taskIds.push(item.taskId);
+      }
+    } else if (Array.isArray(sunoData?.task_ids)) {
+      // Backward compatibility with older API shape
+      taskIds.push(...sunoData.task_ids);
+    }
+
+    if (taskIds.length === 0) {
       throw new Error('No task IDs returned from Suno API');
     }
 
