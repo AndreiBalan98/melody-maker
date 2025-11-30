@@ -1,157 +1,182 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Music, Download, ArrowLeft, Loader2 } from "lucide-react";
+import { Music, Download, Home, RefreshCw, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import { useToast } from "@/hooks/use-toast";
 
 const Processing = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [isGenerating, setIsGenerating] = useState(true);
-  const [generatedSong, setGeneratedSong] = useState<string | null>(null);
-  const childInfo = location.state?.childInfo;
+  const [generatedSongs, setGeneratedSongs] = useState<Array<{ audioUrl: string; title: string }>>([]);
+  
+  const { musicType, occasion, childDetails, suggestions } = location.state || {};
 
   useEffect(() => {
-    if (!childInfo) {
-      navigate("/create");
+    if (!childDetails) {
+      navigate("/create/type");
       return;
     }
 
     const generateSong = async () => {
       try {
-        setIsGenerating(true);
-        
+        const requestData = {
+          musicType,
+          occasion,
+          childDetails,
+          suggestions
+        };
+
         const { data, error } = await supabase.functions.invoke("generate-song", {
-          body: { childInfo },
+          body: requestData,
         });
 
         if (error) throw error;
 
-        if (data?.audioUrl) {
-          setGeneratedSong(data.audioUrl);
-          toast.success("Melodia ta este gata!");
-        } else {
-          throw new Error("Nu s-a putut genera melodia");
+        if (data?.songs && Array.isArray(data.songs)) {
+          setGeneratedSongs(data.songs);
+        } else if (data?.audioUrl) {
+          // Backward compatibility
+          setGeneratedSongs([{ audioUrl: data.audioUrl, title: data.title || "Melodia Ta" }]);
         }
+        
+        setIsGenerating(false);
       } catch (error) {
         console.error("Error generating song:", error);
-        toast.error("A apărut o eroare la generarea melodiei. Te rugăm să încerci din nou.");
-        navigate("/create");
-      } finally {
-        setIsGenerating(false);
+        toast({
+          variant: "destructive",
+          title: "Eroare",
+          description: "A apărut o eroare la generarea melodiei. Te rugăm să încerci din nou.",
+        });
+        navigate("/create/type");
       }
     };
 
     generateSong();
-  }, [childInfo, navigate]);
+  }, [childDetails, musicType, occasion, suggestions, navigate, toast]);
 
-  const handleDownload = () => {
-    if (generatedSong) {
-      const link = document.createElement("a");
-      link.href = generatedSong;
-      link.download = "my-music-song.mp3";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      toast.success("Melodia se descarcă!");
-    }
+  const handleDownload = (audioUrl: string, title: string) => {
+    const link = document.createElement("a");
+    link.href = audioUrl;
+    link.download = `${title}.mp3`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
-  return (
-    <div className="min-h-screen bg-gradient-soft flex items-center justify-center">
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-2xl mx-auto">
-          <div className="text-center space-y-8">
-            {isGenerating ? (
-              <>
-                <div className="relative inline-block">
-                  <div className="w-32 h-32 rounded-full bg-gradient-warm flex items-center justify-center animate-pulse">
-                    <Music className="text-white" size={64} />
-                  </div>
-                  <div className="absolute inset-0 rounded-full bg-gradient-warm animate-ping opacity-20" />
-                </div>
-                
-                <div className="space-y-4">
-                  <h1 className="text-4xl md:text-5xl font-display font-bold">
-                    Creăm <span className="bg-gradient-warm bg-clip-text text-transparent">Melodia Ta</span>
-                  </h1>
-                  <p className="text-xl text-muted-foreground">
-                    Te rugăm să aștepți, magia se întâmplă...
-                  </p>
-                  <div className="flex items-center justify-center gap-2 text-muted-foreground">
-                    <Loader2 className="animate-spin" size={20} />
-                    <span>Acest proces poate dura 1-2 minute</span>
-                  </div>
-                </div>
-
-                <div className="bg-card rounded-3xl p-8 shadow-warm border border-border">
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-                      <span className="text-muted-foreground">Analizăm informațiile...</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="w-2 h-2 rounded-full bg-primary animate-pulse" style={{ animationDelay: "0.3s" }} />
-                      <span className="text-muted-foreground">Compunem melodia...</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="w-2 h-2 rounded-full bg-primary animate-pulse" style={{ animationDelay: "0.6s" }} />
-                      <span className="text-muted-foreground">Adăugăm magic personalizat...</span>
-                    </div>
-                  </div>
-                </div>
-              </>
-            ) : generatedSong ? (
-              <>
-                <div className="inline-flex items-center justify-center w-32 h-32 rounded-full bg-gradient-warm animate-in zoom-in duration-500">
-                  <Music className="text-white" size={64} />
-                </div>
-
-                <div className="space-y-4">
-                  <h1 className="text-4xl md:text-5xl font-display font-bold">
-                    🎉 <span className="bg-gradient-warm bg-clip-text text-transparent">Gata!</span>
-                  </h1>
-                  <p className="text-xl text-muted-foreground">
-                    Melodia ta personalizată este pregătită
-                  </p>
-                </div>
-
-                <div className="bg-card rounded-3xl p-8 shadow-warm border border-border space-y-6">
-                  <audio
-                    src={generatedSong}
-                    controls
-                    className="w-full"
-                    controlsList="nodownload"
-                  />
-
-                  <Button
-                    onClick={handleDownload}
-                    variant="hero"
-                    size="xl"
-                    className="w-full"
-                  >
-                    <Download className="mr-2" size={20} />
-                    Descarcă Melodia
-                  </Button>
-                </div>
-
-                <div className="flex gap-4 justify-center">
-                  <Link to="/create">
-                    <Button variant="outline" size="lg">
-                      Creează Altă Melodie
-                    </Button>
-                  </Link>
-                  <Link to="/">
-                    <Button variant="ghost" size="lg">
-                      <ArrowLeft className="mr-2" size={20} />
-                      Acasă
-                    </Button>
-                  </Link>
-                </div>
-              </>
-            ) : null}
+  if (isGenerating) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4">
+        <div className="max-w-2xl w-full text-center space-y-8">
+          <div className="relative">
+            <div className="w-32 h-32 mx-auto">
+              <div className="absolute inset-0 rounded-full bg-gradient-hero opacity-20 animate-ping" />
+              <div className="relative w-full h-full rounded-full bg-gradient-hero flex items-center justify-center shadow-vibrant">
+                <Music className="text-white animate-pulse" size={56} />
+              </div>
+            </div>
           </div>
+
+          <div className="space-y-4">
+            <h1 className="text-4xl md:text-5xl font-display font-bold">
+              Creăm <span className="bg-gradient-hero bg-clip-text text-transparent">magia</span>...
+            </h1>
+            <p className="text-xl text-muted-foreground">
+              Melodia ta personalizată va fi gata în câteva momente
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            {["Pregătim instrumentele muzicale...", "Compunem melodia...", "Adăugăm detaliile personalizate..."].map(
+              (message, index) => (
+                <div
+                  key={index}
+                  className="flex items-center justify-center gap-3 text-muted-foreground animate-in fade-in slide-in-from-bottom duration-500"
+                  style={{ animationDelay: `${index * 400}ms` }}
+                >
+                  <Loader2 className="animate-spin" size={20} />
+                  <span>{message}</span>
+                </div>
+              )
+            )}
+          </div>
+
+          <div className="pt-4">
+            <p className="text-sm text-muted-foreground">
+              ⏱️ Timp estimat: 2-3 minute
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen py-12 px-4">
+      <div className="container mx-auto max-w-4xl">
+        <div className="text-center mb-12 space-y-4 animate-in fade-in slide-in-from-bottom duration-700">
+          <div className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-card rounded-full shadow-soft mb-4">
+            <Music className="text-primary" size={20} />
+            <span className="font-display font-semibold">Melodia ta este gata!</span>
+          </div>
+          <h1 className="text-4xl md:text-5xl font-display font-bold">
+            Melodiile tale <span className="bg-gradient-hero bg-clip-text text-transparent">personalizate</span>
+          </h1>
+          <p className="text-xl text-muted-foreground">
+            Am creat {generatedSongs.length} variante speciale pentru tine
+          </p>
+        </div>
+
+        <div className="grid gap-6 mb-8">
+          {generatedSongs.map((song, index) => (
+            <div
+              key={index}
+              className="bg-card rounded-3xl p-8 shadow-card hover:shadow-vibrant transition-all animate-in fade-in slide-in-from-bottom duration-700"
+              style={{ animationDelay: `${index * 200}ms` }}
+            >
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-12 h-12 rounded-full bg-gradient-hero flex items-center justify-center flex-shrink-0">
+                  <Music className="text-white" size={24} />
+                </div>
+                <div>
+                  <h2 className="font-display font-bold text-2xl">Varianta {index + 1}</h2>
+                  <p className="text-sm text-muted-foreground">{song.title}</p>
+                </div>
+              </div>
+
+              <audio controls className="w-full mb-6 rounded-lg">
+                <source src={song.audioUrl} type="audio/mpeg" />
+                Browser-ul tău nu suportă redarea audio.
+              </audio>
+
+              <Button
+                onClick={() => handleDownload(song.audioUrl, song.title)}
+                variant="outline"
+                size="lg"
+                className="w-full"
+              >
+                <Download className="mr-2" size={20} />
+                Descarcă MP3
+              </Button>
+            </div>
+          ))}
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <Link to="/create/type">
+            <Button size="lg" className="bg-gradient-hero hover:shadow-vibrant hover:scale-105 transition-spring">
+              <RefreshCw className="mr-2" size={20} />
+              Creează Altă Melodie
+            </Button>
+          </Link>
+          <Link to="/">
+            <Button variant="outline" size="lg">
+              <Home className="mr-2" size={20} />
+              Înapoi Acasă
+            </Button>
+          </Link>
         </div>
       </div>
     </div>

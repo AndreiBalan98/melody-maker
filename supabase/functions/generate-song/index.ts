@@ -1,165 +1,161 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
 serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === "OPTIONS") {
+  if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { childInfo } = await req.json();
+    const { musicType, occasion, childDetails, suggestions } = await req.json();
+    console.log("Received request:", { musicType, occasion, childDetails, suggestions });
 
-    if (!childInfo) {
-      throw new Error("Missing required field: childInfo");
-    }
-
-    console.log("Generating song for:", { childInfoLength: childInfo.length });
-
-    // Get Suno API key
-    const SUNO_API_KEY = Deno.env.get("SUNO_API_KEY");
+    const SUNO_API_KEY = Deno.env.get('SUNO_API_KEY');
     if (!SUNO_API_KEY) {
-      throw new Error("SUNO_API_KEY is not configured");
+      throw new Error('SUNO_API_KEY is not configured');
     }
 
-    // Build the prompt based on child info
-    const prompt = `Create a cheerful and playful personalized children's song. ${childInfo}. The song should be warm, fun, and suitable for children.`;
-    const title = "Melodia Ta Personalizată";
+    // Build prompt based on provided details
+    let prompt = `Create a personalized children's song`;
+    
+    if (occasion) {
+      const occasionText: Record<string, string> = {
+        birthday: "for a birthday celebration",
+        gift: "as a special gift",
+        kindergarten: "for kindergarten activities"
+      };
+      prompt += ` ${occasionText[occasion] || ""}`;
+    }
 
-    console.log("Calling Suno API with prompt:", prompt);
+    if (childDetails?.name) {
+      prompt += ` for ${childDetails.name}`;
+    }
 
-    // Call Suno API to generate music
-    const sunoResponse = await fetch("https://api.sunoapi.org/api/v1/generate", {
-      method: "POST",
+    if (childDetails?.age) {
+      prompt += `, who is ${childDetails.age} years old`;
+    }
+
+    if (childDetails?.interests) {
+      prompt += `. The child loves: ${childDetails.interests}`;
+    }
+
+    if (childDetails?.knowledge) {
+      prompt += `. Special achievements: ${childDetails.knowledge}`;
+    }
+
+    if (childDetails?.other) {
+      prompt += `. Additional details: ${childDetails.other}`;
+    }
+
+    if (suggestions) {
+      prompt += `. Musical suggestions: ${suggestions}`;
+    }
+
+    prompt += ". Make it joyful, engaging, and age-appropriate with a catchy melody.";
+
+    const title = `Melodie pentru ${childDetails?.name || "Copil"}`;
+
+    console.log("Generated prompt:", prompt);
+    console.log("Title:", title);
+
+    // Call Suno API to generate song
+    const sunoResponse = await fetch('https://api.sunoapi.org/api/v1/generate', {
+      method: 'POST',
       headers: {
-        "Authorization": `Bearer ${SUNO_API_KEY}`,
-        "Content-Type": "application/json",
+        'Authorization': `Bearer ${SUNO_API_KEY}`,
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        customMode: false,
-        instrumental: false,
         prompt: prompt,
         title: title,
-        model: "V3_5",
-        // Suno requires a non-empty callback URL, but we rely on polling for the result.
-        // Using a harmless placeholder URL that can safely receive callbacks.
-        callBackUrl: "https://example.com/callback",
+        make_instrumental: false,
+        model: 'chirp-v3-5',
       }),
     });
 
+    if (!sunoResponse.ok) {
+      const errorText = await sunoResponse.text();
+      console.error('Suno API error:', errorText);
+      throw new Error(`Suno API returned ${sunoResponse.status}: ${errorText}`);
+    }
+
     const sunoData = await sunoResponse.json();
-    console.log("Suno API response:", JSON.stringify(sunoData));
+    console.log("Suno response:", sunoData);
 
-    // New Suno API format: { code, msg, data: { task_id: string } }
-    if (!sunoData || typeof sunoData !== "object") {
-      throw new Error("Unexpected response format from Suno API");
+    const taskIds = sunoData.task_ids;
+    if (!taskIds || taskIds.length === 0) {
+      throw new Error('No task IDs returned from Suno API');
     }
 
-    if ("code" in sunoData && (sunoData as any).code !== 200) {
-      const errorMessage = (sunoData as any).msg || `Suno API error code ${(sunoData as any).code}`;
-      throw new Error(errorMessage);
-    }
-
-    const taskId =
-      (sunoData as any).data?.task_id ||
-      (sunoData as any).data?.taskId ||
-      (sunoData as any).task_id ||
-      (sunoData as any).taskId;
-
-    if (!taskId) {
-      throw new Error("No task ID returned from Suno API");
-    }
-
-    console.log("Suno task ID:", taskId);
-
-    // Poll for song completion (max 2 minutes, check every 5 seconds)
+    // Poll for completion
+    const maxAttempts = 60;
+    const pollInterval = 5000; // 5 seconds
     let attempts = 0;
-    const maxAttempts = 24; // 24 attempts × 5 seconds = 120 seconds (2 minutes)
-    let audioUrl: string | null = null;
+    const songs: Array<{ audioUrl: string; title: string }> = [];
 
-    while (attempts < maxAttempts && !audioUrl) {
-      await new Promise((resolve) => setTimeout(resolve, 5000)); // Wait 5 seconds between checks
+    while (attempts < maxAttempts) {
+      await new Promise(resolve => setTimeout(resolve, pollInterval));
       attempts++;
 
-      console.log(`Polling attempt ${attempts}/${maxAttempts}`);
+      const statusResponse = await fetch(`https://api.sunoapi.org/api/v1/query?task_ids=${taskIds.join(',')}`, {
+        headers: {
+          'Authorization': `Bearer ${SUNO_API_KEY}`,
+        },
+      });
 
-      const statusResponse = await fetch(
-        `https://api.sunoapi.org/api/v1/generate/record-info?taskId=${taskId}`,
-        {
-          headers: {
-            "Authorization": `Bearer ${SUNO_API_KEY}`,
-          },
+      if (!statusResponse.ok) {
+        console.error('Status check failed:', await statusResponse.text());
+        continue;
+      }
+
+      const statusData = await statusResponse.json();
+      console.log(`Attempt ${attempts}:`, statusData);
+
+      // Check all tasks for completion
+      for (const task of statusData) {
+        if ((task.status === 'FIRST_SUCCESS' || task.status === 'SUCCESS') && task.audio_url) {
+          const existingSong = songs.find(s => s.audioUrl === task.audio_url);
+          if (!existingSong) {
+            songs.push({
+              audioUrl: task.audio_url,
+              title: task.title || title
+            });
+          }
         }
+      }
+
+      // If we have 2 songs (or all tasks completed), return
+      if (songs.length >= 2 || songs.length === taskIds.length) {
+        console.log("Songs ready:", songs);
+        return new Response(
+          JSON.stringify({ songs }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
+    // If we have at least one song after timeout, return it
+    if (songs.length > 0) {
+      console.log("Timeout reached but returning available songs:", songs);
+      return new Response(
+        JSON.stringify({ songs }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
-
-      if (statusResponse.ok) {
-        const statusData = await statusResponse.json();
-        console.log("Status check:", JSON.stringify(statusData));
-
-        // Expected format: { code, msg, data: { status, response: { sunoData: [tracks] } } }
-        if (
-          statusData &&
-          typeof statusData === "object" &&
-          (!("code" in statusData) || (statusData as any).code === 200) &&
-          (statusData as any).data
-        ) {
-          const taskInfo = (statusData as any).data;
-          const taskStatus = taskInfo.status;
-          
-          // Check for failed statuses
-          if (
-            taskStatus === "CREATE_TASK_FAILED" ||
-            taskStatus === "GENERATE_AUDIO_FAILED" ||
-            taskStatus === "SENSITIVE_WORD_ERROR" ||
-            taskStatus === "CALLBACK_EXCEPTION"
-          ) {
-            throw new Error(`Song generation failed: ${(statusData as any).msg || taskStatus}`);
-          }
-
-          // Accept audio_url when FIRST_SUCCESS or SUCCESS (don't wait for all tracks)
-          if (taskStatus === "FIRST_SUCCESS" || taskStatus === "SUCCESS") {
-            const sunoData = taskInfo.response?.sunoData || [];
-            
-            if (Array.isArray(sunoData) && sunoData.length > 0) {
-              const song = sunoData[0];
-              
-              if (song.audioUrl || song.audio_url) {
-                audioUrl = (song.audioUrl || song.audio_url) as string;
-                console.log(`Song ready at ${taskStatus}! Audio URL:`, audioUrl);
-                break;
-              }
-            }
-          }
-        }
-      }
     }
 
-    if (!audioUrl) {
-      throw new Error("Song generation timed out. Please try again.");
-    }
+    throw new Error('Song generation timed out');
 
-    return new Response(
-      JSON.stringify({
-        audioUrl,
-        title,
-      }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
-    );
   } catch (error) {
-    console.error("Error in generate-song function:", error);
+    console.error('Error in generate-song function:', error);
     return new Response(
-      JSON.stringify({
-        error: error instanceof Error ? error.message : "Failed to generate song",
-      }),
-      {
+      JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
+      { 
         status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     );
   }
