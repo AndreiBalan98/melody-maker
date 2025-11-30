@@ -88,6 +88,7 @@ serve(async (req) => {
         prompt: prompt,
         style: style,
         title: title,
+        callBackUrl: 'https://example.com/callback',
       }),
     });
 
