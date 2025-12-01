@@ -129,11 +129,14 @@ serve(async (req) => {
       await new Promise(resolve => setTimeout(resolve, pollInterval));
       attempts++;
 
-      const statusResponse = await fetch(`https://api.sunoapi.org/api/v1/query?task_ids=${taskIds.join(',')}`, {
-        headers: {
-          'Authorization': `Bearer ${SUNO_API_KEY}`,
-        },
-      });
+      const statusResponse = await fetch(
+        `https://api.sunoapi.org/api/v1/generate/record-info?taskId=${encodeURIComponent(taskIds[0])}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${SUNO_API_KEY}`,
+          },
+        }
+      );
 
       if (!statusResponse.ok) {
         console.error('Status check failed:', await statusResponse.text());
@@ -143,14 +146,29 @@ serve(async (req) => {
       const statusData = await statusResponse.json();
       console.log(`Attempt ${attempts}:`, statusData);
 
+      // Normalize possible response shapes into a flat array of task objects
+      const tasks: any[] = Array.isArray(statusData)
+        ? statusData
+        : Array.isArray(statusData?.data)
+          ? statusData.data
+          : Array.isArray(statusData?.records)
+            ? statusData.records
+            : Array.isArray(statusData?.data?.records)
+              ? statusData.data.records
+              : [];
+
       // Check all tasks for completion
-      for (const task of statusData) {
-        if ((task.status === 'FIRST_SUCCESS' || task.status === 'SUCCESS') && task.audio_url) {
-          const existingSong = songs.find(s => s.audioUrl === task.audio_url);
+      for (const task of tasks) {
+        const status = task.status;
+        const audioUrl = task.audioUrl ?? task.audio_url;
+        const songTitle = task.title ?? task.song_name ?? task.name ?? title;
+
+        if ((status === 'FIRST_SUCCESS' || status === 'SUCCESS') && audioUrl) {
+          const existingSong = songs.find((s) => s.audioUrl === audioUrl);
           if (!existingSong) {
             songs.push({
-              audioUrl: task.audio_url,
-              title: task.title || title
+              audioUrl,
+              title: songTitle,
             });
           }
         }
