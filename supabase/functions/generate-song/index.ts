@@ -20,13 +20,27 @@ serve(async (req) => {
     }
 
     // Build prompt based on provided details
-    let prompt = `Create a personalized children's song`;
+    let prompt = "";
+    
+    if (musicType === "children") {
+      prompt = `Create a personalized children's song`;
+    } else if (musicType === "love") {
+      prompt = `Create a romantic love song`;
+    } else if (musicType === "trap") {
+      prompt = `Create a personalized trap/manele song`;
+    }
     
     if (occasion) {
       const occasionText: Record<string, string> = {
         birthday: "for a birthday celebration",
         gift: "as a special gift",
-        kindergarten: "for kindergarten activities"
+        kindergarten: "for kindergarten activities",
+        anniversary: "for an anniversary celebration",
+        proposal: "for a marriage proposal",
+        wedding: "for a wedding celebration",
+        party: "for a party",
+        club: "for the club",
+        dedication: "as a dedication"
       };
       prompt += ` ${occasionText[occasion] || ""}`;
     }
@@ -71,6 +85,22 @@ serve(async (req) => {
         style = "educational children's song, learning, engaging, playful";
       } else {
         style = "children's music, sweet, heartwarming, melodic";
+      }
+    } else if (musicType === "love") {
+      if (occasion === "anniversary") {
+        style = "romantic ballad, love song, emotional, heartfelt";
+      } else if (occasion === "proposal") {
+        style = "romantic proposal song, passionate, dreamy, special";
+      } else {
+        style = "love song, romantic, tender, meaningful";
+      }
+    } else if (musicType === "trap") {
+      if (occasion === "party") {
+        style = "manele party, upbeat, energetic, celebratory, romanian manele";
+      } else if (occasion === "club") {
+        style = "trap beat, club music, bass-heavy, modern, energetic";
+      } else {
+        style = "manele, romanian trap, emotional, dedication, modern";
       }
     }
 

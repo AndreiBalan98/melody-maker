@@ -25,8 +25,7 @@ const SelectType = () => {
       title: "Melodii de Dragoste",
       description: "Cadouri romantice și declarații muzicale",
       color: "tertiary",
-      gradient: "from-tertiary to-pink-400",
-      disabled: true
+      gradient: "from-tertiary to-pink-400"
     },
     {
       id: "trap" as MusicType,
@@ -34,13 +33,12 @@ const SelectType = () => {
       title: "Trap & Manele",
       description: "Ritmuri moderne și energice",
       color: "accent",
-      gradient: "from-accent to-blue-400",
-      disabled: true
+      gradient: "from-accent to-blue-400"
     }
   ];
 
   const handleContinue = () => {
-    if (selectedType === "children") {
+    if (selectedType) {
       navigate("/create/occasion", { state: { musicType: selectedType } });
     }
   };
@@ -68,25 +66,17 @@ const SelectType = () => {
           {musicTypes.map((type) => {
             const Icon = type.icon;
             const isSelected = selectedType === type.id;
-            const isDisabled = type.disabled;
 
             return (
               <Card
                 key={type.id}
                 className={`relative overflow-hidden cursor-pointer transition-all duration-300 ${
-                  isDisabled 
-                    ? "opacity-50 cursor-not-allowed" 
-                    : isSelected
+                  isSelected
                     ? "ring-4 ring-primary shadow-vibrant scale-105"
                     : "hover:shadow-card hover:-translate-y-1"
                 }`}
-                onClick={() => !isDisabled && setSelectedType(type.id)}
+                onClick={() => setSelectedType(type.id)}
               >
-                {isDisabled && (
-                  <div className="absolute top-4 right-4 bg-muted text-muted-foreground text-xs font-semibold px-3 py-1 rounded-full z-10">
-                    În curând
-                  </div>
-                )}
                 <div className="p-8 space-y-6">
                   <div className={`w-20 h-20 rounded-2xl bg-gradient-to-br ${type.gradient} flex items-center justify-center mx-auto`}>
                     <Icon className="text-white" size={40} />
@@ -95,7 +85,7 @@ const SelectType = () => {
                     <h3 className="font-display font-bold text-2xl">{type.title}</h3>
                     <p className="text-muted-foreground">{type.description}</p>
                   </div>
-                  {isSelected && !isDisabled && (
+                  {isSelected && (
                     <div className="flex justify-center">
                       <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
                         <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">

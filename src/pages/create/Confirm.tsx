@@ -11,7 +11,13 @@ const Confirm = () => {
   const occasionLabels: Record<string, string> = {
     birthday: "Zi de Naștere",
     gift: "Cadou",
-    kindergarten: "Grădiniță"
+    kindergarten: "Grădiniță",
+    anniversary: "Aniversare",
+    proposal: "Cerere în Căsătorie",
+    wedding: "Nuntă",
+    party: "Petrecere",
+    club: "Club",
+    dedication: "Dedicație"
   };
 
   const handleGenerate = () => {
@@ -61,7 +67,7 @@ const Confirm = () => {
 
             <div>
               <h3 className="font-display font-semibold text-sm text-muted-foreground mb-2">
-                Despre copil
+                Detalii
               </h3>
               <div className="space-y-3">
                 {childDetails?.name && (
