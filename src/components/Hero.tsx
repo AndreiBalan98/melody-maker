@@ -1,25 +1,33 @@
 import { Button } from "@/components/ui/button";
 import { Music, Sparkles, Heart, Zap } from "lucide-react";
 import { Link } from "react-router-dom";
-
 const Hero = () => {
-  return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden py-20">
+  return <section className="relative min-h-screen flex items-center justify-center overflow-hidden py-20">
       {/* Animated background elements */}
       <div className="absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute top-20 left-[10%] text-primary/20 animate-float" style={{ animationDelay: "0s" }}>
+        <div className="absolute top-20 left-[10%] text-primary/20 animate-float" style={{
+        animationDelay: "0s"
+      }}>
           <Music size={64} />
         </div>
-        <div className="absolute top-40 right-[15%] text-accent/30 animate-float" style={{ animationDelay: "1s" }}>
+        <div className="absolute top-40 right-[15%] text-accent/30 animate-float" style={{
+        animationDelay: "1s"
+      }}>
           <Sparkles size={48} />
         </div>
-        <div className="absolute bottom-32 left-[20%] text-tertiary/25 animate-float" style={{ animationDelay: "0.5s" }}>
+        <div className="absolute bottom-32 left-[20%] text-tertiary/25 animate-float" style={{
+        animationDelay: "0.5s"
+      }}>
           <Heart size={56} />
         </div>
-        <div className="absolute bottom-40 right-[25%] text-highlight/30 animate-float" style={{ animationDelay: "1.5s" }}>
+        <div className="absolute bottom-40 right-[25%] text-highlight/30 animate-float" style={{
+        animationDelay: "1.5s"
+      }}>
           <Zap size={52} />
         </div>
-        <div className="absolute top-[60%] right-[8%] text-secondary/20 animate-float" style={{ animationDelay: "2s" }}>
+        <div className="absolute top-[60%] right-[8%] text-secondary/20 animate-float" style={{
+        animationDelay: "2s"
+      }}>
           <Music size={72} />
         </div>
       </div>
@@ -46,7 +54,8 @@ const Hero = () => {
           {/* Subheading */}
           <p className="text-xl sm:text-2xl md:text-3xl text-muted-foreground max-w-3xl mx-auto animate-in fade-in slide-in-from-bottom duration-700 delay-200">
             Melodii personalizate pentru copii, zile de naștere, momente de dragoste și multe altele. 
-            <span className="text-primary font-semibold"> Creată în câteva minute.</span>
+            <span className="text-primary font-semibold">
+Creată în câteva minute.</span>
           </p>
 
           {/* CTA Buttons */}
@@ -106,8 +115,6 @@ const Hero = () => {
           </div>
         </div>
       </div>
-    </section>
-  );
+    </section>;
 };
-
 export default Hero;
