@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Cake, Gift, School, ArrowLeft } from "lucide-react";
+import { Cake, Gift, School, ArrowLeft, Heart, Radio } from "lucide-react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 
-type Occasion = "birthday" | "gift" | "kindergarten";
+type Occasion = "birthday" | "gift" | "kindergarten" | "anniversary" | "proposal" | "wedding" | "party" | "club" | "dedication";
 
 const SelectOccasion = () => {
   const [selectedOccasion, setSelectedOccasion] = useState<Occasion | null>(null);
@@ -12,29 +12,84 @@ const SelectOccasion = () => {
   const location = useLocation();
   const musicType = location.state?.musicType;
 
-  const occasions = [
-    {
-      id: "birthday" as Occasion,
-      icon: Cake,
-      title: "Zi de Naștere",
-      description: "O melodie specială pentru ziua copilului",
-      color: "primary"
-    },
-    {
-      id: "gift" as Occasion,
-      icon: Gift,
-      title: "Cadou",
-      description: "Un cadou muzical unic și memorabil",
-      color: "tertiary"
-    },
-    {
-      id: "kindergarten" as Occasion,
-      icon: School,
-      title: "Grădiniță",
-      description: "Melodii educative pentru activități",
-      color: "accent"
+  const getOccasionsByType = () => {
+    if (musicType === "children") {
+      return [
+        {
+          id: "birthday" as Occasion,
+          icon: Cake,
+          title: "Zi de Naștere",
+          description: "O melodie specială pentru ziua copilului",
+          color: "primary"
+        },
+        {
+          id: "gift" as Occasion,
+          icon: Gift,
+          title: "Cadou",
+          description: "Un cadou muzical unic și memorabil",
+          color: "tertiary"
+        },
+        {
+          id: "kindergarten" as Occasion,
+          icon: School,
+          title: "Grădiniță",
+          description: "Melodii educative pentru activități",
+          color: "accent"
+        }
+      ];
+    } else if (musicType === "love") {
+      return [
+        {
+          id: "anniversary" as Occasion,
+          icon: Heart,
+          title: "Aniversare",
+          description: "Sărbătorește dragostea voastră",
+          color: "tertiary"
+        },
+        {
+          id: "proposal" as Occasion,
+          icon: Gift,
+          title: "Cerere în Căsătorie",
+          description: "Momentul perfect pentru DA-ul cel mare",
+          color: "primary"
+        },
+        {
+          id: "dedication" as Occasion,
+          icon: Heart,
+          title: "Dedicație",
+          description: "Exprimă-ți sentimentele prin muzică",
+          color: "accent"
+        }
+      ];
+    } else if (musicType === "trap") {
+      return [
+        {
+          id: "party" as Occasion,
+          icon: Radio,
+          title: "Petrecere",
+          description: "Muzică pentru chef și distracție",
+          color: "accent"
+        },
+        {
+          id: "club" as Occasion,
+          icon: Radio,
+          title: "Club",
+          description: "Ritmuri pentru ringul de dans",
+          color: "primary"
+        },
+        {
+          id: "dedication" as Occasion,
+          icon: Heart,
+          title: "Dedicație",
+          description: "Manea personalizată pentru cineva special",
+          color: "tertiary"
+        }
+      ];
     }
-  ];
+    return [];
+  };
+
+  const occasions = getOccasionsByType();
 
   const handleContinue = () => {
     if (selectedOccasion) {
