@@ -146,30 +146,80 @@ serve(async (req) => {
       const statusData = await statusResponse.json();
       console.log(`Attempt ${attempts}:`, statusData);
 
-      // Normalize possible response shapes into a flat array of task objects
-      const tasks: any[] = Array.isArray(statusData)
-        ? statusData
-        : Array.isArray(statusData?.data)
-          ? statusData.data
-          : Array.isArray(statusData?.records)
-            ? statusData.records
-            : Array.isArray(statusData?.data?.records)
-              ? statusData.data.records
-              : [];
+      // Extract songs from new Suno API response shape first (data.response.sunoData)
+      const responseSongs = Array.isArray(statusData?.data?.response?.sunoData)
+        ? statusData.data.response.sunoData
+        : [];
 
-      // Check all tasks for completion
-      for (const task of tasks) {
-        const status = task.status;
-        const audioUrl = task.audioUrl ?? task.audio_url;
-        const songTitle = task.title ?? task.song_name ?? task.name ?? title;
+      if (responseSongs.length > 0) {
+        for (const song of responseSongs) {
+          const audioUrl =
+            song.audioUrl ??
+            song.audio_url ??
+            song.streamAudioUrl ??
+            song.stream_audio_url;
+          const songTitle =
+            song.title ??
+            song.song_name ??
+            song.name ??
+            title;
 
-        if ((status === 'FIRST_SUCCESS' || status === 'SUCCESS') && audioUrl) {
-          const existingSong = songs.find((s) => s.audioUrl === audioUrl);
-          if (!existingSong) {
-            songs.push({
-              audioUrl,
-              title: songTitle,
-            });
+          if (audioUrl) {
+            const existingSong = songs.find((s) => s.audioUrl === audioUrl);
+            if (!existingSong) {
+              songs.push({
+                audioUrl,
+                title: songTitle,
+              });
+            }
+          }
+        }
+      } else {
+        // Fallback: normalize possible response shapes into a flat array of task objects
+        const tasks: any[] = Array.isArray(statusData)
+          ? statusData
+          : Array.isArray(statusData?.data)
+            ? statusData.data
+            : Array.isArray(statusData?.records)
+              ? statusData.records
+              : Array.isArray(statusData?.data?.records)
+                ? statusData.data.records
+                : statusData?.data
+                  ? [statusData.data]
+                  : [];
+
+        // Check all tasks for completion
+        for (const task of tasks) {
+          const status = task.status ?? task.state;
+          const taskSongs = Array.isArray(task.sunoData)
+            ? task.sunoData
+            : Array.isArray(task.response?.sunoData)
+              ? task.response.sunoData
+              : [task];
+
+          if (status === 'FIRST_SUCCESS' || status === 'SUCCESS') {
+            for (const song of taskSongs) {
+              const audioUrl =
+                song.audioUrl ??
+                song.audio_url ??
+                song.streamAudioUrl ??
+                song.stream_audio_url;
+              const songTitle =
+                song.title ??
+                song.song_name ??
+                song.name ??
+                title;
+
+              if (audioUrl) {
+                const existingSong = songs.find((s) => s.audioUrl === audioUrl);
+                if (!existingSong) {
+                  songs.push({
+                    audioUrl,
+                    title: songTitle,
+                  });
+                }
+              }
+            }
           }
         }
       }
